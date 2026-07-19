@@ -4,7 +4,9 @@
  *          Origin at the spout tip center, +Z up into the machine; the
  *          body top carries the inlet nipple that pokes through the group
  *          mount plate hole.
- * Material: brass group and portafilter (pressure path, never printed)
+ * Material: brass group and portafilter (pressure path, never printed),
+ *           turned oak handle (the only part of the group you hold, and
+ *           the one that must not conduct boiler heat into your hand)
  * Fabrication: cots
  */
 
@@ -17,7 +19,7 @@ module group() {
     color("#b5a642") cylinder(d1 = 8, d2 = 30, h = 20);
     // portafilter body and handle
     color("#b5a642") translate([0, 0, 20]) cylinder(d = group_od + 20, h = 15);
-    color("#222222") translate([0, -group_od / 2 + 5, 27])
+    color("#c8a165") translate([0, -group_od / 2 + 5, 27])
         rotate([90, 0, 0]) cylinder(d = 25, h = 80);
     // group body
     color("#b5a642") translate([0, 0, 20]) cylinder(d = group_od, h = group_h - 20);

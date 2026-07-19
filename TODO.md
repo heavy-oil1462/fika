@@ -13,11 +13,15 @@
 
 ## Phase 2 - mechanical detail
 
-- [ ] Frame joinery: tapped edges vs corner blocks, real hole patterns
+- [ ] Rail stiffness: the deck is a balanced beam on two slender rails,
+      so size the rails properly or add gussets at the slab and deck
+- [ ] Frame joinery: threaded inserts in the oak, real hole patterns
+- [ ] Boiler seat detail: a collar in the deck bore, not a bare hole
 - [ ] Boiler sourcing decision and exact port layout
-- [ ] Pump/motor mounts, vibration isolation
+- [ ] Pump/motor mounts, vibration isolation into the oak
 - [ ] Group mount detail, portafilter clearance check against a real group
 - [ ] Stainless drip tray, load cell mount detail
+- [ ] Steam wand articulation and an oak grip on the wand
 - [ ] Copper routing detail with real bend radii, mesh interference check
 
 ## Phase 3 - electronics bring-up

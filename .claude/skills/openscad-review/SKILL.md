@@ -39,6 +39,9 @@ assembly-local; flip them with -D to isolate a subsystem.
   never declare their own copy (check_params enforces).
 - Every part header: Purpose, Material, Fabrication: cnc|print|cots|
   lib|assembly. Pressure/thermal parts are cots, never print.
+- The frame is open (concepts/open-frame.md): a member exists only if
+  it carries a component, and no panel, cover or back wall is allowed
+  back in. Copper is a visible surface, so route it to be looked at.
 - One bolt size (bolt_hole_d) for every frame joint.
 - Library files (cad/lib/) are pure modules with no top-level geometry.
 - Positions in main_assembly.scad must mirror scripts/check_layout.py
