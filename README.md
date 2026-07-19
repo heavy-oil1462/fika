@@ -26,7 +26,8 @@ cad/; regenerate, never edit.*
   copper, never printed.
 - Deterministic. One parameters file drives CAD, layout checks and
   budgets; one command regenerates every derived artifact; one
-  read-only gate verifies everything, and CI runs exactly that gate.
+  read-only gate verifies everything and runs before every push (CI
+  wiring of the same gate is on TODO).
 
 ## Design snapshot
 

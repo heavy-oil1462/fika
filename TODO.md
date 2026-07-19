@@ -8,7 +8,8 @@
 - [x] Firmware skeleton: base, packages, contracts, example + sim nodes
 - [x] QEMU simulator with injection web page
 - [x] Docs: SPECS, MATERIALS, PROTOCOL, HARDWARE, EXTENDING, concepts
-- [x] CI running the verify gate
+- [ ] CI running the verify gate (deferred: the push token lacks the
+      workflow scope; until then the gate runs locally before every push)
 
 ## Phase 2 - mechanical detail
 

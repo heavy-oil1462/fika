@@ -17,8 +17,9 @@ scripts/verify_design.sh
 ```
 
 Read-only (writes only to a temp dir), exits non-zero on failure. Run it
-before EVERY commit, and after `scripts/regen_all.py`. CI runs exactly
-this script.
+before EVERY commit, and after `scripts/regen_all.py`. This script is
+the CI contract; wiring it into a workflow is on TODO (the push token
+lacks the workflow scope), so until then it must run before every push.
 
 What it checks:
 
