@@ -1,0 +1,23 @@
+# =============================================================================
+# fika - packages/radio-openeth.yaml
+# -----------------------------------------------------------------------------
+# Simulation radio transport: OPENETH is the ethernet MAC that Espressif's
+# QEMU fork emulates (`-nic user,model=open_eth`). This package lets the
+# real, unmodified firmware logic run inside a container; see
+# docs/SIMULATION.md.
+#
+# Transport contract (fika-base.yaml): base is network-transport agnostic
+# and a node includes exactly one radio package, which supplies the network
+# component itself (wifi:, ethernet:, ...). packages/radio-wifi.yaml is the
+# hardware implementation; this is the QEMU one. The machine is mains
+# powered, the radio simply stays up, so the swap is nothing but the NIC.
+#
+# QEMU user-mode networking NATs outbound only: the guest reaches the
+# container/host as 10.0.2.2 (broker, simulated NTP) and gets its address
+# via emulated DHCP, which takes roughly 25 s from power-on. Nothing on the
+# host can dial into the guest, which is fine because the whole protocol is
+# outbound MQTT (docs/PROTOCOL.md).
+# =============================================================================
+
+ethernet:
+  type: OPENETH

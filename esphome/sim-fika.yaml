@@ -1,0 +1,51 @@
+# =============================================================================
+# fika - sim-fika.yaml
+# -----------------------------------------------------------------------------
+# Simulator node: the REAL control logic on an emulated ESP32 (Espressif
+# QEMU, see docs/SIMULATION.md). The hardware sensing packages are swapped
+# for mqtt_subscribe injections (packages/sim-sensors.yaml) and WiFi for
+# the QEMU open_eth NIC; everything else is the production composition.
+# Inject boiler_temp, cup_weight and the switches from the debug web page
+# and watch the machine react.
+# =============================================================================
+
+substitutions:
+  node_name: sim-fika
+  friendly_name: Fika Simulator
+  # QEMU guest reaches the host loopback through the user-net gateway,
+  # where webui.py serves simulated NTP time. Re-sync fast so the time
+  # slider takes effect within seconds.
+  sntp_server: 10.0.2.2
+  sntp_update_interval: 15s
+
+# Keep the emulated flash pristine: QEMU's flash + deferred NVS commits can
+# assert-crash the guest (xQueueGenericSend), and a mutated image crashloops
+# on the next boot. The sim doesn't need flash persistence anyway - the one
+# retained setpoint (brew_target_weight) restores over MQTT at connect.
+preferences:
+  flash_write_interval: 100000h
+
+# QEMU-stability sdkconfig (sim only - never for hardware): TCG emulation
+# starves the second core (interrupt-wdt panics, queue asserts) and a warm
+# reboot faults, so run single-core with the watchdogs off. This merges into
+# the base's esp32/framework block.
+esp32:
+  framework:
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: "y"
+      CONFIG_ESP_INT_WDT: "n"
+      # The task WDT must stay on (ESPHome core static_asserts on it);
+      # a long timeout absorbs TCG scheduling hiccups instead.
+      CONFIG_ESP_TASK_WDT_TIMEOUT_S: "60"
+
+packages:
+  base: !include fika-base.yaml
+  radio: !include packages/radio-openeth.yaml
+  sim_sensors: !include packages/sim-sensors.yaml
+  boiler_pid: !include packages/boiler_pid.yaml
+  steam_mode: !include packages/steam_mode.yaml
+  pump: !include packages/pump.yaml
+  brew_valve: !include packages/brew_valve.yaml
+  cup_logic: !include packages/cup_logic.yaml
+  status: !include packages/status.yaml
+  safety: !include packages/safety.yaml

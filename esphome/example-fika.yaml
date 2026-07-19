@@ -1,0 +1,36 @@
+# =============================================================================
+# fika - example-fika.yaml
+# -----------------------------------------------------------------------------
+# Reference node for real hardware: every stock package with the default
+# pin map (docs/HARDWARE.md). Copy this file into your private fika-config
+# repo, keep the packages your build has hardware for, and override the
+# substitutions that differ (docs/EXTENDING.md). Do not edit base or
+# packages in place.
+#
+# The cup table below is the calibration for two example cups. Weigh your
+# actual cups empty and set tare; pick the beverage targets you like.
+# =============================================================================
+
+substitutions:
+  node_name: fika
+  friendly_name: Fika
+  cup1_name: espresso
+  cup1_tare_g: "92.0"
+  cup1_target_g: "36.0"
+  cup2_name: cappuccino
+  cup2_tare_g: "210.0"
+  cup2_target_g: "150.0"
+
+packages:
+  base: !include fika-base.yaml
+  radio: !include packages/radio-wifi.yaml
+  boiler_sensor: !include packages/boiler_sensor.yaml
+  boiler_pid: !include packages/boiler_pid.yaml
+  steam_mode: !include packages/steam_mode.yaml
+  pump: !include packages/pump.yaml
+  brew_valve: !include packages/brew_valve.yaml
+  cup_scale: !include packages/cup_scale.yaml
+  cup_logic: !include packages/cup_logic.yaml
+  switches: !include packages/switches.yaml
+  status: !include packages/status.yaml
+  safety: !include packages/safety.yaml

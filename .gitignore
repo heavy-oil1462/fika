@@ -1,0 +1,18 @@
+# secrets / local state
+esphome/secrets.yaml
+esphome/.esphome/
+.esphome/
+.esphome-sim/
+# private node-config repo, cloned inside this checkout (see docs/EXTENDING.md)
+fika-config/
+
+# build / dev artifacts
+.venv/
+result
+result-*
+__pycache__/
+*.pyc
+.direnv/
+
+# local claude settings
+.claude/settings.local.json*

@@ -1,0 +1,22 @@
+# =============================================================================
+# fika - packages/brew_valve.yaml
+# -----------------------------------------------------------------------------
+# Three-way brew solenoid: open routes boiler water to the group, closed
+# vents the group to the drip tray so the puck depressurizes. Defaults off
+# (vented) at boot.
+#
+# Substitutions:
+#   valve_pin   Solenoid drive pin (default: GPIO27)
+# Provides:
+#   brew_valve (switch)
+# =============================================================================
+
+substitutions:
+  valve_pin: GPIO27
+
+switch:
+  - platform: gpio
+    name: Brew Valve
+    id: brew_valve
+    pin: ${valve_pin}
+    restore_mode: ALWAYS_OFF

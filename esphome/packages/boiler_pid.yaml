@@ -1,0 +1,73 @@
+# =============================================================================
+# fika - packages/boiler_pid.yaml
+# -----------------------------------------------------------------------------
+# Boiler temperature control: PID climate driving the heater SSR through a
+# slow PWM output. The default target is the brew setpoint; steam_mode.yaml
+# retargets it. Gains are placeholder-safe for the foundation and get tuned
+# against the real boiler (TODO.md); do not trust them for latte art yet.
+#
+# The heater output defaults off at boot and the SSR pin must never be a
+# strapping pin (docs/HARDWARE.md). The mechanical thermal cutoff and
+# thermal fuse protect the boiler independently of anything in this file
+# (concepts/safety-architecture.md).
+#
+# Substitutions:
+#   heater_pin     SSR drive pin (default: GPIO25)
+#   brew_temp_c    Brew setpoint in C (default: 93, must equal
+#                  cad/design_params.scad, checked by tools/validate.py)
+#   pid_kp         Proportional gain (default: 0.3)
+#   pid_ki         Integral gain (default: 0.002)
+#   pid_kd         Derivative gain (default: 6.0)
+# Provides:
+#   boiler (climate)
+#   heater_duty (sensor, %)
+# =============================================================================
+
+substitutions:
+  heater_pin: GPIO25
+  brew_temp_c: "93"
+  pid_kp: "0.3"
+  pid_ki: "0.002"
+  pid_kd: "6.0"
+
+output:
+  # Slow PWM suits a zero-crossing SSR: 2 s period, no phase chopping.
+  - platform: slow_pwm
+    id: heater_out
+    pin: ${heater_pin}
+    period: 2s
+    restart_cycle_on_state_change: false
+
+climate:
+  - platform: pid
+    name: Boiler
+    id: boiler_climate
+    sensor: boiler_temp
+    default_target_temperature: ${brew_temp_c}
+    heat_output: heater_out
+    visual:
+      min_temperature: 15
+      max_temperature: 150
+      temperature_step: 0.5
+    control_parameters:
+      kp: ${pid_kp}
+      ki: ${pid_ki}
+      kd: ${pid_kd}
+
+sensor:
+  - platform: pid
+    name: Heater Duty
+    id: heater_duty
+    climate_id: boiler_climate
+    type: HEAT
+
+esphome:
+  # A coffee machine heats when powered: the physical main switch is the
+  # off state, so start the PID in heat mode at the brew setpoint.
+  on_boot:
+    priority: -100
+    then:
+      - climate.control:
+          id: boiler_climate
+          mode: HEAT
+          target_temperature: ${brew_temp_c}

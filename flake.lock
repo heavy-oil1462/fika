@@ -1,0 +1,61 @@
+{
+  "nodes": {
+    "nix-qemu-espressif": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1784226724,
+        "narHash": "sha256-An7zeTQXO9z3wByLu69raQMpVRyqByOK6BzUITu9yho=",
+        "owner": "SFrijters",
+        "repo": "nix-qemu-espressif",
+        "rev": "8ff168b29477b554cdf0b5b9e95d99ca55b23a35",
+        "type": "github"
+      },
+      "original": {
+        "owner": "SFrijters",
+        "repo": "nix-qemu-espressif",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1784220085,
+        "narHash": "sha256-yvOnN5mGa7uJGWvKQW7wwRYxMSWhtcYdWeyS89TeoVI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9b94bb937e086b616338f0b86150fb41e0057cb1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1784453100,
+        "narHash": "sha256-zpGZb8FYui+i8KLtC0nlcmb0voR2zB80Qn8pe7lzIbk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b471514bed69eff5255c8e63c1f80e5fe56c616f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nix-qemu-espressif": "nix-qemu-espressif",
+        "nixpkgs": "nixpkgs_2"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

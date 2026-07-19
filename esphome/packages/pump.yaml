@@ -1,0 +1,32 @@
+# =============================================================================
+# fika - packages/pump.yaml
+# -----------------------------------------------------------------------------
+# Rotary pump motor control. The ESP32 drives a relay/contactor coil, never
+# the motor circuit directly (docs/HARDWARE.md). Defaults off at boot and
+# refuses to run in steam mode.
+#
+# Substitutions:
+#   pump_pin   Relay coil drive pin (default: GPIO26)
+# Provides:
+#   pump (switch)
+# =============================================================================
+
+substitutions:
+  pump_pin: GPIO26
+
+switch:
+  - platform: gpio
+    name: Pump
+    id: pump
+    pin: ${pump_pin}
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      # Interlock: no brewing while the boiler is at steam temperature.
+      - if:
+          condition:
+            switch.is_on: steam_mode
+          then:
+            - logger.log:
+                level: WARN
+                format: "pump blocked: steam mode active"
+            - switch.turn_off: pump
