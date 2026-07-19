@@ -80,10 +80,14 @@ tank_h = 200;
 tank_y = 245;
 tank_z = 150;
 
-// plumbing, copper lines
+// plumbing, copper lines (suction from the tank is larger bore)
 brew_line_od = 6;
 brew_line_wall = 1;
 steam_line_od = 6;
+suction_line_od = 8;
+
+// fasteners (one bolt size for every frame joint, M5 with clearance)
+bolt_hole_d = 5.3;
 
 // layout rules (scripts/check_layout.py)
 clearance = 10;         // minimum gap between component envelopes
