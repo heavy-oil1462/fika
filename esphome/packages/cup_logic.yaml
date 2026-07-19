@@ -1,0 +1,170 @@
+# =============================================================================
+# fika - packages/cup_logic.yaml
+# -----------------------------------------------------------------------------
+# The behavior-driven brew program: recognize the cup standing on the tray
+# by its calibrated empty weight, select that cup's brew profile, and stop
+# the shot gravimetrically when the beverage reaches the target weight.
+#
+# The matching rule mirrors tools/cup_match.py line for line and must stay
+# that simple: a stable weight within cup_tolerance_g of exactly one
+# calibrated tare selects that cup; two candidates select nothing (never
+# guess a brew program). tools/validate.py asserts cup_tolerance_g equals
+# cup_match.TOLERANCE_G.
+#
+# The foundation ships a two-cup table as substitutions. Your private
+# fika-config overrides the tares and targets (docs/EXTENDING.md).
+#
+# Substitutions:
+#   cup_tolerance_g   Match band around a calibrated tare (default: 5.0)
+#   cup1_name         First cup name (default: espresso)
+#   cup1_tare_g       First cup empty weight (default: 92.0)
+#   cup1_target_g     First cup beverage target (default: 36.0)
+#   cup2_name         Second cup name (default: cappuccino)
+#   cup2_tare_g       Second cup empty weight (default: 210.0)
+#   cup2_target_g     Second cup beverage target (default: 150.0)
+# Provides:
+#   detected_cup (text_sensor)
+#   brew_target_weight (number, g)
+#   beverage_weight (sensor, g)
+#   brewing (binary_sensor)
+# =============================================================================
+
+substitutions:
+  cup_tolerance_g: "5.0"
+  cup1_name: espresso
+  cup1_tare_g: "92.0"
+  cup1_target_g: "36.0"
+  cup2_name: cappuccino
+  cup2_tare_g: "210.0"
+  cup2_target_g: "150.0"
+
+globals:
+  - id: active_tare_g
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+  - id: is_brewing
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+text_sensor:
+  - platform: template
+    name: Detected Cup
+    id: detected_cup
+    state_topic: ${mqtt_root}/${node_name}/text_sensor/detected_cup/state
+    update_interval: never
+
+number:
+  # Setpoint: retained so it survives restarts and broker outages.
+  - platform: template
+    name: Brew Target Weight
+    id: brew_target_weight
+    unit_of_measurement: g
+    min_value: 10
+    max_value: 500
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 36
+    command_retain: true
+
+sensor:
+  - platform: template
+    name: Beverage Weight
+    id: beverage_weight
+    unit_of_measurement: g
+    accuracy_decimals: 1
+    lambda: |-
+      if (!id(is_brewing)) return 0.0;
+      return id(cup_weight).state - id(active_tare_g);
+    update_interval: 1s
+
+binary_sensor:
+  - platform: template
+    name: Brewing
+    id: brewing
+    lambda: return id(is_brewing);
+
+  # The physical brew switch starts and stops the shot.
+  - id: !extend brew_switch
+    on_press:
+      - script.execute: start_brew
+    on_release:
+      - script.execute: stop_brew
+
+script:
+  # Mirror of cup_match.match_cup: exactly one candidate within tolerance,
+  # ambiguity selects nothing.
+  - id: match_cup
+    mode: single
+    then:
+      - lambda: |-
+          const float w = id(cup_weight).state;
+          const float tol = ${cup_tolerance_g};
+          int hits = 0;
+          const char *name = "none";
+          float tare = 0.0f, target = 0.0f;
+          if (fabsf(w - ${cup1_tare_g}) <= tol) {
+            hits++; name = "${cup1_name}";
+            tare = ${cup1_tare_g}; target = ${cup1_target_g};
+          }
+          if (fabsf(w - ${cup2_tare_g}) <= tol) {
+            hits++; name = "${cup2_name}";
+            tare = ${cup2_tare_g}; target = ${cup2_target_g};
+          }
+          if (hits == 1) {
+            id(active_tare_g) = tare;
+            id(detected_cup).publish_state(name);
+            auto call = id(brew_target_weight).make_call();
+            call.set_value(target);
+            call.perform();
+          } else {
+            id(detected_cup).publish_state("none");
+          }
+
+  - id: start_brew
+    mode: single
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return !id(is_brewing)
+                  && id(detected_cup).state != "none"
+                  && !id(detected_cup).state.empty()
+                  && !id(steam_mode).state
+                  && !id(fault).state;
+          then:
+            - lambda: id(is_brewing) = true;
+            - switch.turn_on: brew_valve
+            - switch.turn_on: pump
+          else:
+            - logger.log:
+                level: WARN
+                format: "brew refused: no cup, steam mode, or fault"
+
+  - id: stop_brew
+    mode: single
+    then:
+      - lambda: id(is_brewing) = false;
+      - switch.turn_off: pump
+      - switch.turn_off: brew_valve
+
+interval:
+  # Cup recognition while idle; gravimetric stop while brewing
+  # (cup_match.brew_done: beverage weight >= target).
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            lambda: return !id(is_brewing) && !isnan(id(cup_weight).state);
+          then:
+            - script.execute: match_cup
+      - if:
+          condition:
+            lambda: |-
+              return id(is_brewing)
+                  && (id(cup_weight).state - id(active_tare_g))
+                     >= id(brew_target_weight).state;
+          then:
+            - script.execute: stop_brew

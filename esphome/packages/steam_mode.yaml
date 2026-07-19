@@ -1,0 +1,49 @@
+# =============================================================================
+# fika - packages/steam_mode.yaml
+# -----------------------------------------------------------------------------
+# Steam mode for milk frothing on the single dual-use boiler: turning the
+# mode on retargets the PID to the steam setpoint, turning it off returns
+# to the brew setpoint. Brewing is interlocked while steam mode is active
+# (cup_logic.yaml refuses to start, and this package stops a running pump
+# when steam is engaged). The physical steam switch drives the mode; the
+# HA entity does the same thing remotely.
+#
+# Substitutions:
+#   brew_temp_c    Brew setpoint in C (default: 93)
+#   steam_temp_c   Steam setpoint in C (default: 125, must equal
+#                  cad/design_params.scad, checked by tools/validate.py)
+# Provides:
+#   steam_mode (switch)
+# =============================================================================
+
+substitutions:
+  brew_temp_c: "93"
+  steam_temp_c: "125"
+
+switch:
+  - platform: template
+    name: Steam Mode
+    id: steam_mode
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    # Setpoint-like mode, but still an actuator: never retain the command.
+    on_turn_on:
+      - switch.turn_off: pump
+      - switch.turn_off: brew_valve
+      - climate.control:
+          id: boiler_climate
+          mode: HEAT
+          target_temperature: ${steam_temp_c}
+    on_turn_off:
+      - climate.control:
+          id: boiler_climate
+          mode: HEAT
+          target_temperature: ${brew_temp_c}
+
+# The physical switch mirrors into the mode entity.
+binary_sensor:
+  - id: !extend steam_switch
+    on_press:
+      - switch.turn_on: steam_mode
+    on_release:
+      - switch.turn_off: steam_mode

@@ -1,0 +1,14 @@
+# =============================================================================
+# fika - packages/radio-wifi.yaml
+# -----------------------------------------------------------------------------
+# WiFi transport for real hardware. Satisfies the base transport contract by
+# providing the network component. The machine is mains powered, so the
+# radio simply stays up.
+#
+# Substitutions:
+#   (none - credentials come from secrets.yaml)
+# =============================================================================
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

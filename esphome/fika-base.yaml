@@ -1,0 +1,149 @@
+# =============================================================================
+# fika - fika-base.yaml
+# -----------------------------------------------------------------------------
+# Core package for every fika node: board, MQTT transport, time source and
+# device health entities.
+#
+# Everything brew- or safety-critical runs locally on the ESP32. Home
+# Assistant over MQTT is observation and setpoint adjustment only: the
+# machine must make espresso with the network cable cut.
+#
+# TRANSPORT CONTRACT: base is network-transport agnostic. Every node must
+# also include exactly one radio package that provides the network component
+# itself (wifi:, ethernet:, ...). The machine is mains powered, so the radio
+# stays up; there is no duty cycling. Stock transports:
+# packages/radio-wifi.yaml (real hardware) and packages/radio-openeth.yaml
+# (QEMU simulation). See docs/EXTENDING.md.
+#
+# Substitutions (override from your node config):
+#   node_name       Hostname / MQTT node id (lowercase, no spaces).
+#   friendly_name   Human-readable name used by Home Assistant.
+#   board           PlatformIO board id (default: esp32dev).
+#   mqtt_root       Root of the MQTT topic tree (default: fika).
+#   mqtt_port       Broker port (default: 1883).
+#   timezone        IANA timezone.
+#   sntp_server     NTP server (the simulator points this at its fake NTP).
+#   log_level       Logger level (default: INFO).
+#
+# MQTT semantics are specified in docs/PROTOCOL.md. Setpoints are retained,
+# actuator commands are never retained (a replayed pump command must not
+# start a pump).
+# =============================================================================
+
+substitutions:
+  node_name: fika
+  friendly_name: Fika
+  board: esp32dev
+  mqtt_root: fika
+  mqtt_port: "1883"
+  timezone: Europe/Stockholm
+  sntp_server: 0.pool.ntp.org
+  sntp_update_interval: 15min
+  log_level: INFO
+
+esphome:
+  name: ${node_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: ${board}
+  framework:
+    type: esp-idf
+
+logger:
+  level: ${log_level}
+  baud_rate: 115200
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+safe_mode:
+
+time:
+  - platform: sntp
+    id: net_time
+    timezone: ${timezone}
+    update_interval: ${sntp_update_interval}
+    servers:
+      - ${sntp_server}
+
+mqtt:
+  broker: !secret mqtt_broker
+  port: ${mqtt_port}
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  topic_prefix: ${mqtt_root}/${node_name}
+  discovery: true
+  discovery_retain: true
+  keepalive: 15s
+  # The machine is fully autonomous: never reboot because the broker is away.
+  reboot_timeout: 0s
+  birth_message:
+    topic: ${mqtt_root}/${node_name}/status
+    payload: online
+    retain: true
+  # No log streaming over MQTT: nothing in the stack consumes the debug
+  # topic. Use OTA logs when debugging.
+  log_topic:
+  will_message:
+    topic: ${mqtt_root}/${node_name}/status
+    payload: offline
+    retain: true
+  on_connect:
+    # The 1 s delay is load-bearing: on_connect fires while the client is
+    # still finishing its connect handshake, and an immediate mqtt.publish
+    # is silently dropped (verified against real firmware under QEMU in
+    # frodas; fika keeps the guard).
+    - delay: 1s
+    - script.execute: publish_snapshot
+
+script:
+  # Publish the current state of every entity the moment MQTT connects, so
+  # Home Assistant is fresh after a broker restart. The #ifdef guards keep
+  # base compiling in minimal compositions.
+  - id: publish_snapshot
+    mode: single
+    then:
+      - lambda: |-
+          #ifdef USE_SENSOR
+          for (auto *s : App.get_sensors())
+            if (s->has_state()) s->publish_state(s->state);
+          #endif
+          #ifdef USE_BINARY_SENSOR
+          for (auto *bs : App.get_binary_sensors())
+            if (bs->has_state()) bs->publish_state(bs->state);
+          #endif
+          #ifdef USE_TEXT_SENSOR
+          for (auto *ts : App.get_text_sensors())
+            if (ts->has_state()) ts->publish_state(ts->state);
+          #endif
+          #ifdef USE_SWITCH
+          for (auto *sw : App.get_switches())
+            sw->publish_state(sw->state);
+          #endif
+          #ifdef USE_NUMBER
+          for (auto *n : App.get_numbers())
+            if (!std::isnan(n->state)) n->publish_state(n->state);
+          #endif
+
+button:
+  - platform: restart
+    name: Restart
+    entity_category: diagnostic
+
+sensor:
+  - platform: uptime
+    name: Uptime
+    id: uptime_s
+    update_interval: 60s
+    entity_category: diagnostic
+
+text_sensor:
+  - platform: version
+    name: ESPHome Version
+    entity_category: diagnostic
+    # ESPHome's MQTT default drops text sensors into sensor/<oid>/state.
+    # Pin the documented topic (docs/PROTOCOL.md) - do the same for every
+    # text_sensor in every package.
+    state_topic: ${mqtt_root}/${node_name}/text_sensor/esphome_version/state

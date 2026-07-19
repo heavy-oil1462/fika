@@ -1,0 +1,43 @@
+# =============================================================================
+# fika - packages/boiler_sensor.yaml
+# -----------------------------------------------------------------------------
+# Boiler temperature sensing: PT100 on a MAX31865 over SPI. This is the
+# process value for the PID in boiler_pid.yaml and the input to the
+# firmware over-temperature interlock in safety.yaml.
+#
+# Substitutions:
+#   spi_clk_pin        SPI clock (default: GPIO18)
+#   spi_miso_pin       SPI MISO (default: GPIO19)
+#   spi_mosi_pin       SPI MOSI (default: GPIO23)
+#   max31865_cs_pin    Chip select (default: GPIO5)
+#   rtd_nominal_ohm    PT100 nominal resistance (default: 100)
+#   rtd_reference_ohm  Reference resistor on the board (default: 430)
+# Provides:
+#   boiler_temp (sensor, C)
+# =============================================================================
+
+substitutions:
+  spi_clk_pin: GPIO18
+  spi_miso_pin: GPIO19
+  spi_mosi_pin: GPIO23
+  max31865_cs_pin: GPIO5
+  rtd_nominal_ohm: "100"
+  rtd_reference_ohm: "430"
+
+spi:
+  clk_pin: ${spi_clk_pin}
+  miso_pin: ${spi_miso_pin}
+  mosi_pin: ${spi_mosi_pin}
+
+sensor:
+  - platform: max31865
+    name: Boiler Temperature
+    id: boiler_temp
+    cs_pin: ${max31865_cs_pin}
+    reference_resistance: ${rtd_reference_ohm} ohm
+    rtd_nominal_resistance: ${rtd_nominal_ohm} ohm
+    update_interval: 1s
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1

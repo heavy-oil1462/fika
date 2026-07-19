@@ -1,0 +1,60 @@
+# =============================================================================
+# fika - packages/cup_scale.yaml
+# -----------------------------------------------------------------------------
+# The drip tray scale: an HX711 under the tray weighs whatever stands on
+# it. This package is hardware only; the cup recognition and gravimetric
+# stop logic lives in cup_logic.yaml so the simulator can inject
+# cup_weight and reuse the logic unchanged.
+#
+# Calibrate with two known masses and set the linear map below
+# (docs/HARDWARE.md has the procedure).
+#
+# Substitutions:
+#   hx711_dout_pin   Data pin (default: GPIO32)
+#   hx711_clk_pin    Clock pin (default: GPIO33)
+#   scale_raw_zero   Raw reading with an empty tray (default: 0)
+#   scale_raw_1kg    Raw reading with 1000 g on the tray (default: 1000000)
+# Provides:
+#   cup_weight (sensor, g)
+#   scale_tare (button)
+# =============================================================================
+
+substitutions:
+  hx711_dout_pin: GPIO32
+  hx711_clk_pin: GPIO33
+  scale_raw_zero: "0"
+  scale_raw_1kg: "1000000"
+
+globals:
+  - id: scale_tare_offset_g
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+sensor:
+  - platform: hx711
+    name: Cup Weight
+    id: cup_weight
+    dout_pin: ${hx711_dout_pin}
+    clk_pin: ${hx711_clk_pin}
+    gain: 128
+    update_interval: 0.2s
+    unit_of_measurement: g
+    accuracy_decimals: 1
+    filters:
+      - calibrate_linear:
+          - ${scale_raw_zero} -> 0.0
+          - ${scale_raw_1kg} -> 1000.0
+      - lambda: return x - id(scale_tare_offset_g);
+      - median:
+          window_size: 5
+          send_every: 1
+
+button:
+  - platform: template
+    name: Scale Tare
+    id: scale_tare
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(scale_tare_offset_g) += id(cup_weight).state;

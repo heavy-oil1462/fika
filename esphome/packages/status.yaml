@@ -1,0 +1,60 @@
+# =============================================================================
+# fika - packages/status.yaml
+# -----------------------------------------------------------------------------
+# Minimal machine feedback: a status text for Home Assistant, a solid
+# indicator lamp that lights when the boiler is at temperature, and a
+# short beep when the shot finishes. No screens.
+#
+# Substitutions:
+#   lamp_pin       Ready lamp pin (default: GPIO21)
+#   buzzer_pin     Buzzer pin (default: GPIO22)
+#   ready_band_c   Lamp lights within this band of the target (default: 2.0)
+# Provides:
+#   machine_status (text_sensor)
+# =============================================================================
+
+substitutions:
+  lamp_pin: GPIO21
+  buzzer_pin: GPIO22
+  ready_band_c: "2.0"
+
+output:
+  - platform: gpio
+    id: lamp_out
+    pin: ${lamp_pin}
+  - platform: gpio
+    id: buzzer_out
+    pin: ${buzzer_pin}
+
+text_sensor:
+  - platform: template
+    name: Machine Status
+    id: machine_status
+    state_topic: ${mqtt_root}/${node_name}/text_sensor/machine_status/state
+    update_interval: never
+
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          const char *status = "heating";
+          const bool at_temp =
+              fabsf(id(boiler_temp).state
+                    - id(boiler_climate).target_temperature) <= ${ready_band_c};
+          if (id(fault).state) status = "fault";
+          else if (id(is_brewing)) status = "brewing";
+          else if (id(steam_mode).state) status = "steam";
+          else if (at_temp) status = "ready";
+          if (id(machine_status).state != status)
+            id(machine_status).publish_state(status);
+          // lamp: steady on when ready to brew or steam
+          if (at_temp && !id(fault).state) id(lamp_out).turn_on();
+          else id(lamp_out).turn_off();
+
+# Shot finished: one short beep.
+binary_sensor:
+  - id: !extend brewing
+    on_release:
+      - output.turn_on: buzzer_out
+      - delay: 300ms
+      - output.turn_off: buzzer_out

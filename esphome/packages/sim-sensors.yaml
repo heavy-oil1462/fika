@@ -1,0 +1,84 @@
+# =============================================================================
+# fika - packages/sim-sensors.yaml
+# -----------------------------------------------------------------------------
+# Injectable replacements for every stock hardware sensor. Each entity
+# carries the exact id and name of its hardware counterpart, so the real
+# logic packages (boiler_pid, steam_mode, cup_logic, brew_valve, safety) run
+# unmodified against values you set from the simulator web UI (sim/webui.py),
+# or from anything that publishes to the injection topics
+# <mqtt_root>/<node_name>/sim/<key>:
+#
+#   sim/boiler_temp    C    (Boiler Temperature)
+#   sim/cup_weight     g    (Cup Weight)
+#   sim/brew_switch    0/1  (Brew Switch)
+#   sim/steam_switch   0/1  (Steam Switch)
+#
+# Publish retained so values survive a firmware reboot: the emulated flash
+# keeps no state, so retained topics are what restores the world at connect.
+# The `sim/` subtree stays cleanly separated from the per-entity
+# `<component>/<object_id>/state` topics the server consumes.
+#
+# There is no mqtt_subscribe binary_sensor platform, so the panel switches
+# arrive as internal float sensors (0/1) mirrored into template
+# binary_sensors under the real ids. The template lambdas run every loop, so
+# a flipped switch bites within milliseconds, like a GPIO would.
+#
+# Fail-safe semantics are preserved: before the first injection a sensor has
+# no state (NaN), which the logic packages treat as sensor-not-ready
+# (heating holds off, no cup is recognized).
+#
+# Substitutions:
+#   mqtt_root    MQTT topic root (default fika, from fika-base.yaml)
+#   node_name    node id in the topic tree (from fika-base.yaml)
+# Provides:
+#   boiler_temp (sensor, C)
+#   cup_weight (sensor, g)
+#   brew_switch (binary_sensor)
+#   steam_switch (binary_sensor)
+# =============================================================================
+
+sensor:
+  - platform: mqtt_subscribe
+    topic: ${mqtt_root}/${node_name}/sim/boiler_temp
+    name: Boiler Temperature
+    id: boiler_temp
+    unit_of_measurement: °C
+    device_class: temperature
+    accuracy_decimals: 1
+
+  - platform: mqtt_subscribe
+    topic: ${mqtt_root}/${node_name}/sim/cup_weight
+    name: Cup Weight
+    id: cup_weight
+    unit_of_measurement: g
+    accuracy_decimals: 1
+
+  # Raw 0/1 injections feeding the template binary_sensors below.
+  - platform: mqtt_subscribe
+    topic: ${mqtt_root}/${node_name}/sim/brew_switch
+    id: brew_switch_raw
+    internal: true
+    accuracy_decimals: 0
+
+  - platform: mqtt_subscribe
+    topic: ${mqtt_root}/${node_name}/sim/steam_switch
+    id: steam_switch_raw
+    internal: true
+    accuracy_decimals: 0
+
+binary_sensor:
+  - platform: template
+    name: Brew Switch
+    id: brew_switch
+    lambda: |-
+      if (std::isnan(id(brew_switch_raw).state))
+        return {};
+      return id(brew_switch_raw).state > 0.5;
+
+  - platform: template
+    name: Steam Switch
+    id: steam_switch
+    lambda: |-
+      if (std::isnan(id(steam_switch_raw).state))
+        return {};
+      return id(steam_switch_raw).state > 0.5;

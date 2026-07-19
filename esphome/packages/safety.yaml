@@ -1,0 +1,70 @@
+# =============================================================================
+# fika - packages/safety.yaml
+# -----------------------------------------------------------------------------
+# Firmware interlocks: the third and weakest safety layer, after the
+# mechanical thermal cutoff + thermal fuse and the boiler relief valve
+# (concepts/safety-architecture.md). Over-temperature or a dead boiler
+# sensor latches a fault: heater off, pump off, valve closed. The latch
+# clears only by power cycling the machine.
+#
+# Substitutions:
+#   max_temp_c        Firmware hard cutoff in C (default: 135, must equal
+#                     cad/design_params.scad, checked by tools/validate.py)
+#   sensor_grace_s    Seconds of missing/NaN boiler readings before
+#                     faulting (default: 10)
+# Provides:
+#   fault (binary_sensor)
+# =============================================================================
+
+substitutions:
+  max_temp_c: "135"
+  sensor_grace_s: "10"
+
+globals:
+  - id: fault_latched
+    type: bool
+    restore_value: false
+    initial_value: "false"
+  - id: sensor_bad_s
+    type: int
+    restore_value: false
+    initial_value: "0"
+
+binary_sensor:
+  - platform: template
+    name: Fault
+    id: fault
+    device_class: problem
+    lambda: return id(fault_latched);
+
+script:
+  - id: latch_fault
+    mode: single
+    then:
+      - lambda: id(fault_latched) = true;
+      - climate.control:
+          id: boiler_climate
+          mode: "OFF"
+      - switch.turn_off: pump
+      - switch.turn_off: brew_valve
+      - logger.log:
+          level: ERROR
+          format: "FAULT latched: heater off, pump off (power cycle to clear)"
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          if (id(fault_latched)) return;
+          const float t = id(boiler_temp).state;
+          if (isnan(t)) {
+            id(sensor_bad_s) += 1;
+          } else {
+            id(sensor_bad_s) = 0;
+            if (t > ${max_temp_c}) {
+              id(latch_fault).execute();
+              return;
+            }
+          }
+          if (id(sensor_bad_s) >= ${sensor_grace_s})
+            id(latch_fault).execute();

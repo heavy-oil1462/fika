@@ -1,0 +1,40 @@
+# =============================================================================
+# fika - packages/switches.yaml
+# -----------------------------------------------------------------------------
+# The physical controls: two solid toggle switches. Brew starts and stops
+# the shot (cup_logic.yaml binds the automation), steam engages steam mode
+# (steam_mode.yaml binds it). Input-only pins are fine here; external
+# pull-downs per docs/HARDWARE.md.
+#
+# Substitutions:
+#   brew_switch_pin    Brew toggle (default: GPIO34, input only)
+#   steam_switch_pin   Steam toggle (default: GPIO35, input only)
+# Provides:
+#   brew_switch (binary_sensor)
+#   steam_switch (binary_sensor)
+# =============================================================================
+
+substitutions:
+  brew_switch_pin: GPIO34
+  steam_switch_pin: GPIO35
+
+binary_sensor:
+  - platform: gpio
+    name: Brew Switch
+    id: brew_switch
+    pin:
+      number: ${brew_switch_pin}
+      mode:
+        input: true
+    filters:
+      - delayed_on_off: 30ms
+
+  - platform: gpio
+    name: Steam Switch
+    id: steam_switch
+    pin:
+      number: ${steam_switch_pin}
+      mode:
+        input: true
+    filters:
+      - delayed_on_off: 30ms
