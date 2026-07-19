@@ -16,20 +16,25 @@
  * points noted per name.
  */
 
-// frame envelope (outer dimensions, CNC aluminum plates)
-frame_w = 310;
-frame_d = 320;
-frame_h = 400;          // side plate height; sides run z -8..392
-frame_plate_t = 8;      // structural plates: sides, base, rear, top
-mount_plate_t = 6;      // group mount plate
-mount_plate_d = 90;     // group mount plate depth (y extent)
-mount_plate_y = 20;     // group mount plate front edge
+// open frame: an oak base slab carrying two aluminum rails and one deck
+// plate that holds the boiler and the group through bored seats. There is
+// no enclosure - every member carries a component, and everything else is
+// left exposed. Heights are derived from the components they hold.
+frame_w = 330;          // base slab width (clears the pump and its ports)
+frame_d = 320;          // base slab depth
+base_t = 24;            // oak slab thickness (mass and damping; z -base_t..0)
+frame_plate_t = 10;     // aluminum rails and deck
+rail_inset = 66;        // rail inner face from center (flanks the boiler)
+rail_front = 135;       // rail front edge (clears the drip tray)
+rail_back = 195;        // rail back edge (clears the pump)
+deck_front = 20;        // deck front edge (leaves plate around the group bore)
+deck_back = 305;        // deck back edge (carries the tank behind the boiler)
 
 // boiler (single, dual use, copper shell; position = bottom center)
 boiler_od = 102;
 boiler_h = 160;
 boiler_wall = 2;
-boiler_x = -50;
+boiler_x = 0;
 boiler_y = 180;
 boiler_z = 150;
 boiler_volume_l = 1.0;  // nominal fill, used by the energy budget
@@ -64,7 +69,7 @@ cup_max_d = 90;
 
 // drip tray with load cell scale (tray_z = top of load cell + gap)
 tray_w = 200;
-tray_d = 130;
+tray_d = 110;
 tray_h = 30;
 tray_y = 15;            // tray front edge
 tray_z = 13;
@@ -73,12 +78,14 @@ loadcell_w = 12.7;
 loadcell_h = 12.7;
 scale_capacity_g = 1000;
 
-// water tank (position = front face / bottom)
-tank_w = 200;
-tank_d = 55;
-tank_h = 200;
-tank_y = 245;
-tank_z = 150;
+// water tank: stands on the deck behind the boiler, so the outlet sits
+// well above the pump inlet and the suction line stays flooded.
+// tank_z must equal the deck top (scripts/check_layout.py asserts it).
+tank_w = 140;           // stays within the deck it stands on
+tank_d = 60;
+tank_h = 150;
+tank_y = 241;
+tank_z = 228;
 
 // plumbing, copper lines (suction from the tank is larger bore)
 brew_line_od = 6;
@@ -90,5 +97,5 @@ suction_line_od = 8;
 bolt_hole_d = 5.3;
 
 // layout rules (scripts/check_layout.py)
-clearance = 10;         // minimum gap between component envelopes
-clearance_wall = 5;     // minimum gap between components and frame plates
+clearance = 10;         // minimum gap between component envelopes, and
+                        // between the rails and anything they do not carry

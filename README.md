@@ -1,15 +1,15 @@
 # fika
 
-An open source DIY cappuccino machine. Minimalist and solid: exposed
-copper pipes, lead free brass, a CNC-milled aluminum frame, and an ESP32
-brain running ESPHome with first-class Home Assistant support.
+An open source DIY cappuccino machine. Minimalist and solid: an oak
+slab, two aluminum rails, exposed copper pipes and lead free brass, and
+an ESP32 brain running ESPHome with first-class Home Assistant support.
 
 ![fika assembly](outputs/png/main_assembly.png)
 
-*Layout-stage assembly: single dual-use copper boiler, rotary pump low
-at the rear, 58 mm group over a drip tray that doubles as a scale,
-gravity tank, exposed copper runs. Rendered by the pipeline from
-cad/; regenerate, never edit.*
+*Layout-stage assembly: single dual-use copper boiler and 58 mm group
+seated in the deck, rotary pump under it, water tank standing on the
+deck, drip tray that doubles as a scale, exposed copper throughout.
+Rendered by the pipeline from cad/; regenerate, never edit.*
 
 ## Philosophy
 
@@ -20,10 +20,14 @@ cad/; regenerate, never edit.*
 - Autonomous. Every control loop runs on the ESP32; MQTT and Home
   Assistant observe and adjust setpoints. The machine brews with the
   network cable cut.
+- Nothing that does not work. There is no case: the frame is an oak
+  slab, two rails and a deck, and a member exists only if it carries a
+  component (concepts/open-frame.md). What is left over is copper, so
+  the plumbing is routed to be looked at.
 - Solid and honest. Mains, heat and pressure are handled by a
   mechanical safety chain that works with the firmware dead
   (concepts/safety-architecture.md). Pressure parts are brass and
-  copper, never printed.
+  copper, never printed; the parts you touch are oak.
 - Deterministic. One parameters file drives CAD, layout checks and
   budgets; one command regenerates every derived artifact; one
   read-only gate verifies everything and runs before every push (CI
@@ -34,8 +38,8 @@ cad/; regenerate, never edit.*
 - Single boiler, dual use: brew at 93 C, steam at 125 C (SPECS.md).
 - Rotary vane pump + mains motor, OPV at 9 bar.
 - 230 V / 50 Hz EU mains, 1400 W element, 10 A circuit friendly.
-- Frame: 6082-T6 plates cut on a PrintNC; DXF profiles are build
-  products (outputs/dxf/).
+- Frame: 24 mm oak slab plus 10 mm 6082-T6 rails and deck, all cut on a
+  PrintNC; DXF profiles are build products (outputs/dxf/).
 
 ## Control system
 

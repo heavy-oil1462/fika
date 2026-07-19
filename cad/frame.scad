@@ -1,10 +1,12 @@
 /*
- * fika - aluminum plate frame.
- * Purpose: structural skeleton: two sides, base, rear, top and the group
- *          mount plate, all flat plates for the PrintNC. Positioned in
- *          machine coordinates so the assembly places frame() at origin.
- * Material: 6082-T6 aluminum, frame_plate_t structural / mount_plate_t mount
- * Fabrication: cnc (DXF profiles via -D export_profile=side|base|rear|top|mount)
+ * fika - open frame: oak base slab, two aluminum rails, one deck plate.
+ * Purpose: hold the components and nothing else. The oak slab is the mass
+ *          that stands on the counter and damps the pump; the rails carry
+ *          the deck; the deck holds the boiler and the group through bored
+ *          seats. There are no panels, so the machine is open on every
+ *          side and every run of copper stays visible.
+ * Material: European oak slab (base), 6082-T6 aluminum (rails, deck)
+ * Fabrication: cnc (DXF profiles via -D export_profile=base|rail|deck)
  */
 
 include <design_params.scad>
@@ -13,70 +15,69 @@ use <lib/plate.scad>
 $fn = 60;
 export_profile = "";
 
-inner_w = frame_w - 2 * frame_plate_t;
-group_top_z = tray_z + tray_h + cup_clearance_h + group_h;
+// heights follow the components: the deck sits under the group body top,
+// and the rails run from the slab up to the deck.
+deck_top = tray_z + tray_h + cup_clearance_h + group_h;
+deck_z0 = deck_top - frame_plate_t;
+rail_h = deck_z0;
 
-function corner_holes(w, d, inset = 12) =
-    [for (sx = [-1, 1], sy = [-1, 1]) [sx * (w / 2 - inset), sy * (d / 2 - inset)]];
+deck_halfw = rail_inset + frame_plate_t;
+deck_cy = (deck_front + deck_back) / 2;
+rail_cy = (rail_front + rail_back) / 2;
+rail_x = rail_inset + frame_plate_t / 2;   // rail mid-plane
 
-// side plate, drawn with x = machine depth, y = machine height
-module frame_side_profile() {
-    difference() {
-        rounded_rect(frame_d, frame_h);
-        hole_pattern(corner_holes(frame_d, frame_h), bolt_hole_d);
-        hole_pattern([[-frame_d / 2 + 12, 0], [frame_d / 2 - 12, 0]], bolt_hole_d);
-    }
-}
+// where the rails land, in base-slab and deck coordinates
+function rail_bolts(cy) =
+    [for (sx = [-1, 1], sy = [-1, 1])
+        [sx * rail_x, cy + sy * (rail_back - rail_front) / 2 * 0.6]];
 
 module frame_base_profile() {
     difference() {
-        rounded_rect(inner_w, frame_d);
-        hole_pattern(corner_holes(inner_w, frame_d), bolt_hole_d);
+        rounded_rect(frame_w, frame_d, 12);
+        hole_pattern(rail_bolts(rail_cy - frame_d / 2), bolt_hole_d);
     }
 }
 
-module frame_rear_profile() {
+module frame_rail_profile() {
     difference() {
-        rounded_rect(inner_w, frame_h);
-        hole_pattern(corner_holes(inner_w, frame_h), bolt_hole_d);
+        rounded_rect(rail_back - rail_front, rail_h, 8);
+        // into the slab below and the deck above
+        for (sy = [-1, 1])
+            hole_pattern([[sy * (rail_back - rail_front) / 2 * 0.6,
+                           -rail_h / 2 + 12],
+                          [sy * (rail_back - rail_front) / 2 * 0.6,
+                           rail_h / 2 - 12]], bolt_hole_d);
     }
 }
 
-module frame_top_profile() {
+// Four bores, four jobs: seat the group, seat the boiler, and pass the
+// tank outlet and the brew riser through the plate.
+module frame_deck_profile() {
     difference() {
-        rounded_rect(inner_w, frame_d - frame_plate_t);
-        hole_pattern(corner_holes(inner_w, frame_d - frame_plate_t), bolt_hole_d);
-    }
-}
-
-module group_mount_profile() {
-    difference() {
-        rounded_rect(inner_w, mount_plate_d);
-        translate([group_x, 0]) circle(d = group_od);
-        hole_pattern(corner_holes(inner_w, mount_plate_d), bolt_hole_d);
+        rounded_rect(2 * deck_halfw, deck_back - deck_front, 10);
+        translate([group_x, group_y - deck_cy]) circle(d = group_od);
+        translate([boiler_x, boiler_y - deck_cy]) circle(d = boiler_od);
+        translate([0, tank_y + tank_d / 2 - deck_cy]) circle(d = 20);
+        translate([boiler_x, boiler_y - boiler_od / 2 - 15 - deck_cy])
+            circle(d = brew_line_od + 10);
+        hole_pattern(rail_bolts(rail_cy - deck_cy), bolt_hole_d);
     }
 }
 
 module frame() {
+    // oak slab, top face at z 0
+    color("#c8a165") translate([0, frame_d / 2, -base_t])
+        plate(base_t) frame_base_profile();
     color("silver") {
         for (s = [-1, 1])
-            translate([s == -1 ? -frame_w / 2 : frame_w / 2 - frame_plate_t,
-                       frame_d / 2, frame_h / 2 - frame_plate_t])
-                rotate([90, 0, 90]) plate(frame_plate_t) frame_side_profile();
-        translate([0, frame_d / 2, -frame_plate_t])
-            plate(frame_plate_t) frame_base_profile();
-        translate([0, frame_d, frame_h / 2 - frame_plate_t])
-            rotate([90, 0, 0]) plate(frame_plate_t) frame_rear_profile();
-        translate([0, (frame_d - frame_plate_t) / 2, frame_h - 2 * frame_plate_t])
-            plate(frame_plate_t) frame_top_profile();
-        translate([0, mount_plate_y + mount_plate_d / 2, group_top_z])
-            plate(mount_plate_t) group_mount_profile();
+            translate([s * rail_x - frame_plate_t / 2, rail_cy, rail_h / 2])
+                rotate([90, 0, 90]) plate(frame_plate_t) frame_rail_profile();
+        translate([0, deck_cy, deck_z0])
+            plate(frame_plate_t) frame_deck_profile();
     }
 }
 
-if (export_profile == "side") frame_side_profile();
-else if (export_profile == "base") frame_base_profile();
-else if (export_profile == "rear") frame_rear_profile();
-else if (export_profile == "top") frame_top_profile();
-else if (export_profile == "mount") group_mount_profile();
+if (export_profile == "base") frame_base_profile();
+else if (export_profile == "rail") frame_rail_profile();
+else if (export_profile == "deck") frame_deck_profile();
 else frame();

@@ -7,12 +7,18 @@ improvised.
 
 ## Frame and mechanics
 
-- 6082-T6 aluminum plate, 8 mm: two sides, base, rear, top
-  (cad/frame.scad, DXF profiles in outputs/dxf/).
-- 6082-T6 aluminum plate, 6 mm: group mount plate (cad/frame.scad,
-  profile `mount`).
-- M5 stainless bolts and t-slot or tapped joints throughout, one bolt
-  size for every frame joint (bolt_hole_d in cad/design_params.scad).
+The frame is open: three members, each carrying a component
+(concepts/open-frame.md). DXF profiles for all of them are pipeline
+outputs in outputs/dxf/.
+
+- European oak slab, 24 mm, 330 x 320: the base everything bolts to
+  (cad/frame.scad, profile `base`). Cut on the PrintNC like the metal.
+  Oiled, not lacquered, so it can be re-oiled after spills.
+- 6082-T6 aluminum plate, 10 mm: two rails (profile `rail`) and one
+  deck (profile `deck`). The deck is bored to seat the boiler and the
+  group and to pass the tank outlet and brew riser.
+- M5 stainless bolts throughout, one bolt size for every frame joint
+  (bolt_hole_d in cad/design_params.scad). Threaded inserts in the oak.
 - Printed drip tray, PETG (cad/drip_tray.scad); replace with folded
   stainless later (TODO phase 2).
 
@@ -35,10 +41,13 @@ improvised.
   envelope), with 9 bar OPV.
 - Mains induction motor, ~100 mm frame (cad/pump.scad envelope).
 - Three-way brew solenoid valve, 230 V.
-- 58 mm portafilter group (cad/group.scad envelope).
+- 58 mm portafilter group (cad/group.scad envelope), with a turned oak
+  handle: the one part of the group you hold, and the one that must not
+  conduct boiler heat into your hand.
 - Copper tube 6 mm OD (pressure and steam), 8 mm OD (suction), lead
   free brass compression fittings (cad/hydraulic_path.scad).
-- Water tank ~2 l, glass or stainless (cad/tank.scad envelope).
+- Water tank ~1.3 l, glass or stainless, standing on the deck so the
+  suction line stays flooded (cad/tank.scad envelope).
 
 ## Electronics
 

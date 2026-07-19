@@ -6,13 +6,16 @@
  * Fabrication: lib
  */
 
-// Solid segment from point a to point b.
+// Solid segment from point a to point b. Coincident points are skipped:
+// a run may collapse a leg when two components share a coordinate, and
+// that must not produce a NaN rotation.
 module tube_seg(a, b, od) {
     v = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
     l = norm(v);
-    translate(a)
-        rotate([0, acos(v[2] / l), atan2(v[1], v[0])])
-            cylinder(h = l, d = od);
+    if (l > 0.001)
+        translate(a)
+            rotate([0, acos(v[2] / l), atan2(v[1], v[0])])
+                cylinder(h = l, d = od);
 }
 
 // Polyline run through the given points, sphere joints at the bends.

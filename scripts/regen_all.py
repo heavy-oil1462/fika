@@ -33,8 +33,10 @@ ROOT = Path(__file__).resolve().parent.parent
 RENDER = ROOT / "scripts" / "render_scad.sh"
 
 PARTS = [
+    # base, rails and deck bolt face to face, so the frame unions into
+    # one solid rather than four loose plates
     {"name": "frame", "shells": 1,
-     "profiles": ["side", "base", "rear", "top", "mount"]},
+     "profiles": ["base", "rail", "deck"]},
     {"name": "boiler", "shells": 1},
     {"name": "pump", "shells": 1},
     {"name": "group", "shells": 1},

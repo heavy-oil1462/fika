@@ -18,9 +18,10 @@ them.
 
 - Rotary vane pump on a mains induction motor, low in the chassis for
   noise and center of gravity. OPV at 9 bar bypassing to the tank.
-- Path: tank (gravity) -> pump -> OPV tee -> boiler bottom ->
-  front outlet -> three-way brew valve -> group; steam from the boiler
-  top to the wand. Exposed copper lines, brass compression fittings.
+- Path: tank (gravity, standing on the deck above the pump) -> pump ->
+  OPV tee -> boiler bottom -> front outlet -> three-way brew valve ->
+  group; steam from the boiler top to the wand over the tray. Exposed
+  copper lines, brass compression fittings.
 - Boiler mechanical relief valve at 12 bar, venting over the tray.
 - Group: standard 58 mm E61-compatible portafilter group (cots), bolted
   under the group mount plate.
@@ -52,9 +53,18 @@ them.
 - Every actuator defaults off at boot; actuator commands are never
   retained on the broker.
 
-## 6. Fabrication
+## 6. Frame and fabrication
 
-- Frame: CNC-milled 6082-T6 aluminum plates (PrintNC), one bolt size
-  (M5) throughout. DXF profiles are pipeline outputs (outputs/dxf/).
+- Open frame, no enclosure: an oak base slab, two aluminum rails, one
+  aluminum deck. A member exists only if it carries a component
+  (concepts/open-frame.md), so the copper runs are the visible surface
+  of the machine.
+- The deck seats the boiler and the group in bored seats, carries the
+  tank, and passes the tank outlet and brew riser through two bores.
+- Oak where hands and the counter meet the machine: the base slab and
+  the portafilter handle (which must not conduct boiler heat).
+- All flat parts are CNC-milled on the PrintNC, oak included; one bolt
+  size (M5) throughout. DXF profiles are pipeline outputs
+  (outputs/dxf/).
 - Every cad part header carries a fabrication tag: cnc, print, cots,
   lib or assembly (gate: validate `fabtags`).
