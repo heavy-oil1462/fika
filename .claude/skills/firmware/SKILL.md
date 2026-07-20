@@ -54,3 +54,7 @@ temps`, then the verify skill before committing.
   toolchain into .esphome/ on first use (large, needs network).
 - `nix develop` only sees git-tracked files; `git add` new packages
   before validating inside the devshell.
+
+Shared engine: the esphome-skills package (flake input); repo side
+is tools/project.py plus the thin entry points in tools/.
+Canonical doc and cross-repo landmines: https://github.com/heavy-oil1462/esphome-skills/blob/main/skills/firmware.md
