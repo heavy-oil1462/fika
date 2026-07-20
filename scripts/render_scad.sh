@@ -15,7 +15,8 @@
 #   scripts/render_scad.sh cad/boiler.scad boiler.stl           # manifold check/export
 set -euo pipefail
 
-CHANNEL="channel:nixos-25.05"
+# single source for the pinned channel; scripts/render_hero.py reads it too
+CHANNEL="$(cat "$(dirname "$0")/nixpkgs_channel")"
 
 build() { nix-build -I "nixpkgs=$CHANNEL" '<nixpkgs>' -A "$1" --no-out-link 2>/dev/null | tail -1; }
 
