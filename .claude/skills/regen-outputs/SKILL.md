@@ -23,7 +23,8 @@ What it does, in order:
 2. Prints the effective parameters (FIKA_* env overrides marked)
 3. STL per part from the manifest -> outputs/stl/
 4. DXF per CNC profile -> outputs/dxf/ (feed these to PrintNC CAM)
-5. Fixed-camera PNGs -> outputs/png/ (README hero among them)
+5. Fixed-camera PNGs -> outputs/png/ (reference renders; the README
+   hero is separate, see the hero-render skill)
 6. Energy budget -> outputs/budgets/energy_budget.md
 
 Any OpenSCAD WARNING fails the run. Adding a part is one line in the
