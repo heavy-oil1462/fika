@@ -3,7 +3,8 @@
 Grouped by subsystem. CAD back-references point at the owning model.
 The electronics detail table with costs lives in docs/HARDWARE.md.
 Pressure and thermal parts are cots only: never printed, never
-improvised.
+improvised. Status caveat: this is a concept-phase list; no part on it
+has been bought or fitted (see Status in README.md).
 
 ## Frame and mechanics
 

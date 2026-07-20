@@ -2,7 +2,8 @@
 
 Numbered so discussions can cite sections. Dimensions and setpoints live
 in cad/design_params.scad; this file states the design intent around
-them.
+them. Status caveat: this is a concept-phase specification; none of it
+has been built or validated (see Status in README.md).
 
 ## 1. Thermal
 

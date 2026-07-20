@@ -4,6 +4,17 @@ An open source DIY cappuccino machine. Minimalist and solid: an oak
 slab, two aluminum rails, exposed copper pipes and lead free brass, and
 an ESP32 brain running ESPHome with first-class Home Assistant support.
 
+## Status: early concept
+
+This project is at the earliest possible stage. No machine exists and
+none has ever been built: no frame has been cut, no boiler brazed, no
+wire connected. What the repository contains is a parametric layout
+model, a firmware skeleton that runs under QEMU, and documents
+describing the design intent. Every dimension, setpoint, cost and
+claim in these files is an unvalidated estimate and may change
+completely. Nothing here is a build guide, and nothing here has been
+reviewed for safety. Do not build from these files.
+
 ![fika assembly](outputs/png/main_assembly.png)
 
 *Layout-stage assembly: single dual-use copper boiler and 58 mm group
