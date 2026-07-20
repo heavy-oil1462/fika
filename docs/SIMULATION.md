@@ -25,6 +25,11 @@ that runs in the machine.
             YOUR broker ---> YOUR Home Assistant
 ```
 
+The simulator engine (container build, web UI, QEMU glue) lives in the
+shared [esphome-skills](https://github.com/heavy-oil1462/esphome-skills)
+package; the fika side is `tools/project.py` (injections, presets, node
+names) and `tools/test_sim.py` (assertions).
+
 ## Quickstart
 
 ```bash

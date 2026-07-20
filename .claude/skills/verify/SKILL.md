@@ -56,3 +56,7 @@ What it checks:
   surfaceless, works headless). First render fetches them.
 - `nix develop` requires the repo files to be tracked by git (nix flakes
   ignore untracked files; `git add` new files first).
+
+Shared engine: the esphome-skills package (flake input); repo side
+is tools/project.py plus the thin entry points in tools/.
+Canonical doc and cross-repo landmines: https://github.com/heavy-oil1462/esphome-skills/blob/main/skills/verify.md
