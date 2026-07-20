@@ -59,3 +59,7 @@ sudo -E nix develop .#sim -c python3 tools/test_sim.py
   build QEMU from source (~20 min).
 - The entrypoint resolves the broker hostname to an IP before compiling
   (QEMU user-net cannot resolve container DNS names).
+
+Shared engine: the esphome-skills package (flake input); repo side
+is tools/project.py plus the thin entry points in tools/.
+Canonical doc and cross-repo landmines: https://github.com/heavy-oil1462/esphome-skills/blob/main/skills/simulator.md

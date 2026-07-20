@@ -6,7 +6,8 @@ Usage:
     python3 tools/validate.py yaml esphome    # a subset
     python3 tools/validate.py --list          # show available checks
 
-Checks:
+Checks (framework and generic checks: esphome_skills; fika-local checks
+couple firmware to CAD and stay in this file):
     yaml       yamllint over the whole repo (.yamllint.yaml rules)
     esphome    `esphome config` on the example and sim compositions
                (auto-provisions esphome/secrets.yaml from the example)
@@ -19,9 +20,9 @@ Checks:
                cup_match.TOLERANCE_G (the lambda mirrors the python)
     temps      brew/steam/max temperature substitution defaults in the
                packages equal cad/design_params.scad (one shared value)
-    sim        web UI injection keys match sim-sensors.yaml topics;
-               sim/Containerfile only COPYs paths that exist
-    python     scripts/*.py + tools/*.py + sim/*.py byte-compile
+    sim        project injection keys match sim-sensors.yaml topics; the
+               sim container staging sources exist
+    python     scripts/*.py + tools/*.py byte-compile
 
 Intended entry points: scripts/verify_design.sh, `.claude/skills/verify`,
 CI, and pre-commit. Run inside the devshell (`nix develop`) so all
@@ -31,66 +32,24 @@ layout, budgets, drift) lives in scripts/verify_design.sh.
 
 from __future__ import annotations
 
-import py_compile
 import re
-import shutil
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _lib import (  # noqa: E402
-    CAD_DIR,
-    ESPHOME_DIR,
-    REPO_ROOT,
-    SIM_DIR,
-    fail,
-    heading,
-    ok,
-    run,
-    warn,
-)
+from project import PROJECT  # noqa: E402
+
+from esphome_skills import checks, validate  # noqa: E402
+from esphome_skills.lib import fail, ok, run  # noqa: E402
+
+REPO_ROOT = PROJECT.repo_root
+CAD_DIR = REPO_ROOT / "cad"
+ESPHOME_DIR = PROJECT.esphome_dir
 
 FAB_TAGS = ("cnc", "print", "cots", "lib", "assembly")
 
 
-def check_yaml() -> bool:
-    if not shutil.which("yamllint"):
-        fail("yamllint not on PATH - enter the devshell: nix develop")
-        return False
-    proc = run(["yamllint", "--strict", "."])
-    if proc.returncode != 0:
-        fail("yamllint:")
-        print(proc.stdout or proc.stderr)
-        return False
-    ok("yamllint clean")
-    return True
-
-
-def check_esphome() -> bool:
-    esphome = shutil.which("esphome")
-    if not esphome:
-        fail("esphome not found - enter the devshell: nix develop")
-        return False
-
-    secrets = ESPHOME_DIR / "secrets.yaml"
-    if not secrets.exists():
-        shutil.copy(ESPHOME_DIR / "secrets.yaml.example", secrets)
-        warn("provisioned esphome/secrets.yaml from example (placeholders)")
-
-    good = True
-    for config in ("example-fika.yaml", "sim-fika.yaml"):
-        proc = run([esphome, "config", str(ESPHOME_DIR / config)], timeout=300)
-        if proc.returncode != 0:
-            fail(f"esphome config {config}:")
-            tail = (proc.stdout + proc.stderr).splitlines()[-30:]
-            print("\n".join(tail))
-            good = False
-        else:
-            ok(f"esphome config {config}")
-    return good
-
-
-def check_fabtags() -> bool:
+def check_fabtags(project) -> bool:
     good = True
     files = [p for p in sorted(CAD_DIR.rglob("*.scad"))
              if p.name != "design_params.scad" and "archive" not in p.parts]
@@ -124,7 +83,7 @@ def provided_ids() -> dict[str, str]:
     return ids
 
 
-def check_protocol() -> bool:
+def check_protocol(project) -> bool:
     table_ids = set()
     doc = REPO_ROOT / "docs" / "PROTOCOL.md"
     for line in doc.read_text().splitlines():
@@ -150,7 +109,7 @@ def check_protocol() -> bool:
     return good
 
 
-def check_cups() -> bool:
+def check_cups(project) -> bool:
     import cup_match
 
     proc = run([sys.executable, "-m", "unittest", "-q", "test_cup_match"],
@@ -176,7 +135,7 @@ def check_cups() -> bool:
     return True
 
 
-def check_temps() -> bool:
+def check_temps(project) -> bool:
     """The temperature setpoints span CAD and firmware: one shared value."""
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
     from design_params import PARAMS
@@ -205,98 +164,16 @@ def check_temps() -> bool:
     return good
 
 
-def check_sim() -> bool:
-    """Cross-artifact contract: web UI <-> sim-sensors.yaml <-> Containerfile."""
-    import importlib.util
-
-    good = True
-    spec = importlib.util.spec_from_file_location(
-        "fika_sim_webui", SIM_DIR / "webui.py")
-    webui = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(webui)
-    ui_keys = set(webui.INJECTIONS)
-
-    sensors_yaml = (ESPHOME_DIR / "packages" / "sim-sensors.yaml").read_text()
-    fw_keys = set(re.findall(
-        r"topic:\s*\$\{mqtt_root\}/\$\{node_name\}/sim/(\S+)", sensors_yaml))
-    if ui_keys != fw_keys:
-        fail(f"sim injection keys drifted: webui={sorted(ui_keys)} "
-             f"firmware={sorted(fw_keys)}")
-        good = False
-    else:
-        ok(f"web UI injection keys match sim-sensors.yaml ({len(ui_keys)})")
-
-    bad_presets = {
-        name for name, preset in webui.PRESETS.items()
-        if set(preset) - ui_keys
-    }
-    if bad_presets:
-        fail(f"web UI presets use unknown keys: {sorted(bad_presets)}")
-        good = False
-    else:
-        ok(f"web UI presets reference valid keys ({len(webui.PRESETS)})")
-
-    containerfile = (SIM_DIR / "Containerfile").read_text()
-    for line in containerfile.splitlines():
-        if line.startswith("COPY ") and "--from=" not in line:
-            for src in line.split()[1:-1]:
-                if not (REPO_ROOT / src.rstrip("/")).exists():
-                    fail(f"Containerfile COPYs missing path: {src}")
-                    good = False
-    if good:
-        ok("Containerfile COPY sources exist")
-    return good
-
-
-def check_python() -> bool:
-    good = True
-    files = (sorted((REPO_ROOT / "scripts").glob("*.py"))
-             + sorted((REPO_ROOT / "tools").glob("*.py"))
-             + sorted(SIM_DIR.glob("*.py")))
-    for path in files:
-        try:
-            py_compile.compile(str(path), doraise=True)
-        except py_compile.PyCompileError as err:
-            fail(f"{path.relative_to(REPO_ROOT)}: {err}")
-            good = False
-    if good:
-        ok(f"{len(files)} python files byte-compile (scripts/ tools/ sim/)")
-    return good
-
-
 CHECKS = {
-    "yaml": check_yaml,
-    "esphome": check_esphome,
+    "yaml": checks.check_yaml,
+    "esphome": checks.check_esphome,
     "fabtags": check_fabtags,
     "protocol": check_protocol,
     "cups": check_cups,
     "temps": check_temps,
-    "sim": check_sim,
-    "python": check_python,
+    "sim": checks.check_sim,
+    "python": checks.check_python,
 }
 
-
-def main() -> int:
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    if "--list" in sys.argv:
-        print("\n".join(CHECKS))
-        return 0
-    selected = args or list(CHECKS)
-    unknown = set(selected) - set(CHECKS)
-    if unknown:
-        fail(f"unknown checks: {', '.join(sorted(unknown))} (see --list)")
-        return 2
-
-    results: dict[str, bool] = {}
-    for name in selected:
-        heading(name)
-        results[name] = CHECKS[name]()
-
-    heading("summary")
-    for name, passed in results.items():
-        (ok if passed else fail)(name)
-    return 0 if all(results.values()) else 1
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(validate.main(PROJECT, CHECKS))

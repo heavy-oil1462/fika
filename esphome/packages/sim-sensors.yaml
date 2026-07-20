@@ -4,7 +4,7 @@
 # Injectable replacements for every stock hardware sensor. Each entity
 # carries the exact id and name of its hardware counterpart, so the real
 # logic packages (boiler_pid, steam_mode, cup_logic, brew_valve, safety) run
-# unmodified against values you set from the simulator web UI (sim/webui.py),
+# unmodified against values you set from the simulator web UI (esphome_skills.webui),
 # or from anything that publishes to the injection topics
 # <mqtt_root>/<node_name>/sim/<key>:
 #
