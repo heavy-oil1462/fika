@@ -4,7 +4,9 @@ The mechanical and hydraulic BOM lives in MATERIALS.md. This file covers
 the control electronics around the ESP32. Mains wiring is sketched here
 for the contract only; SPECS.md section 5 and
 concepts/safety-architecture.md define the safety chain that must exist
-regardless of what the firmware does.
+regardless of what the firmware does. Status caveat: concept phase;
+none of this has been wired or tested on hardware (see Status in
+README.md).
 
 ## Bill of materials (electronics)
 
