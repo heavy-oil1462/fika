@@ -25,7 +25,9 @@ What it does, in order:
 4. DXF per CNC profile -> outputs/dxf/ (feed these to PrintNC CAM)
 5. Fixed-camera PNGs -> outputs/png/ (reference renders; the README
    hero is separate, see the hero-render skill)
-6. Energy budget -> outputs/budgets/energy_budget.md
+6. Toolchain record -> outputs/openscad_version.txt (the byte-drift
+   gate only compares against a regeneration by the same version)
+7. Energy budget -> outputs/budgets/energy_budget.md
 
 Any OpenSCAD WARNING fails the run. Adding a part is one line in the
 PARTS manifest (scripts/regen_all.py): name, expected shell count,
@@ -42,8 +44,13 @@ optional DXF profile list.
 
 ## Notes (sandbox landmines)
 
-- scripts/render_scad.sh fetches OpenSCAD + Mesa from nixpkgs on first
-  use (network). It renders via EGL surfaceless with software GL, which
-  is why no GUI or X server is needed.
+- scripts/render_scad.sh resolves OpenSCAD as $OPENSCAD, then a 2024+
+  openscad on PATH, then nix (fetched from nixpkgs on first use,
+  network). The nix path renders via EGL surfaceless with software GL,
+  which is why no GUI or X server is needed.
+- Regenerating with a different OpenSCAD build than the committed
+  outputs/ rewrites every STL/DXF/PNG byte. That is fine when intended
+  (openscad_version.txt updates with them), but do not mix toolchains
+  within one change.
 - Committed PNGs are byte-compared by the verify gate. The camera args
   in the manifest are part of the contract; do not tweak them casually.

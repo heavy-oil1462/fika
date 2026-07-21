@@ -8,8 +8,10 @@
 - [x] Firmware skeleton: base, packages, contracts, example + sim nodes
 - [x] QEMU simulator with injection web page
 - [x] Docs: SPECS, MATERIALS, PROTOCOL, HARDWARE, EXTENDING, concepts
-- [ ] CI running the verify gate (deferred: the push token lacks the
-      workflow scope; until then the gate runs locally before every push)
+- [x] CI running the verify gate (.github/workflows/: validate on every
+      change, the full design gate and the firmware build path-filtered;
+      no nix in CI - pip plus the OpenSCAD snapshot AppImage, byte drift
+      self-skips unless the version matches outputs/)
 
 ## Phase 2 - mechanical detail
 

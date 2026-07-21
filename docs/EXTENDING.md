@@ -51,5 +51,5 @@ cups. Keep tares at least 2 x cup_tolerance_g apart.
 ## Checks
 
 Whatever you change: `python3 tools/validate.py`, and before any commit
-`scripts/verify_design.sh` (the verify skill). The same gate is the CI
-contract once wired (TODO.md).
+`scripts/verify_design.sh` (the verify skill). CI runs the same gate
+(.github/workflows/), so a green local run means a green PR.

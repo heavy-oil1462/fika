@@ -95,6 +95,16 @@ def main() -> int:
         for name, camera in PNGS:
             good &= render(ROOT / "cad" / f"{name}.scad",
                            out / "png" / f"{name}.png", [camera])
+        # record the toolchain that produced these bytes: the byte-drift
+        # gate only compares against a regeneration by the same version
+        ver = subprocess.run([str(RENDER), "--version-string"],
+                             capture_output=True, text=True, cwd=ROOT)
+        if ver.returncode != 0:
+            print(f"[FAIL] openscad version probe:\n{ver.stderr}")
+            good = False
+        else:
+            (out / "openscad_version.txt").write_text(ver.stdout)
+            print("ok: openscad_version.txt")
         budget = subprocess.run(
             [sys.executable, str(ROOT / "tools/energy_budget.py"),
              "--out", str(out / "budgets" / "energy_budget.md")],

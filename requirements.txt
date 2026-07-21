@@ -1,0 +1,13 @@
+# The no-nix toolchain for the software gate (tools/validate.py and
+# steps 1-3 of scripts/verify_design.sh). The nix devshell (flake.nix)
+# provides the same tools and stays the pinned reference; either works.
+#
+#     pip install -r requirements.txt
+#
+# The CAD steps additionally need a 2024+ OpenSCAD dev snapshot on PATH
+# or in $OPENSCAD (see scripts/render_scad.sh), and the optional hero
+# render needs Blender 4.x (see scripts/render_hero.py). The simulator
+# stays on nix (nix develop .#sim supplies Espressif QEMU).
+esphome-skills @ git+https://github.com/heavy-oil1462/esphome-skills
+esphome>=2025.5
+yamllint>=1.35

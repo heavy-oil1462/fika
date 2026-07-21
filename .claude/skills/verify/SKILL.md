@@ -18,12 +18,14 @@ scripts/verify_design.sh
 
 Read-only (writes only to a temp dir), exits non-zero on failure. Run it
 before EVERY commit, and after `scripts/regen_all.py`. This script is
-the CI contract; wiring it into a workflow is on TODO (the push token
-lacks the workflow scope), so until then it must run before every push.
+the CI contract: .github/workflows/design.yml runs it in full on
+CAD-side changes (pip toolchain plus the OpenSCAD snapshot AppImage, no
+nix), and validate.yml runs the software gate on every change. CI
+confirms the local run, it does not replace it.
 
 What it checks:
 
-1. Python byte-compile (scripts/ tools/ sim/)
+1. Python byte-compile (scripts/ tools/)
 2. Params guard: no .scad shadows a cad/design_params.scad name
 3. Software gate `tools/validate.py`: yamllint strict, `esphome config`
    on example + sim nodes, cad fabrication tags, PROTOCOL.md id table vs
@@ -35,6 +37,8 @@ What it checks:
 6. Layout clearances and frame containment (scripts/check_layout.py)
 7. Energy budget assertions (breaker margin, heat-up under 6 min)
 8. Drift: the temp regeneration must byte-match committed outputs/
+   (only compared when the resolved OpenSCAD version equals
+   outputs/openscad_version.txt; otherwise it self-skips with a notice)
 
 ## Interpreting results
 
@@ -49,11 +53,16 @@ What it checks:
 
 ## Notes (sandbox landmines)
 
-- Steps 3 and 4 need the devshell toolchain. The script falls back to
-  `nix develop` automatically; the first run downloads the toolchain and
-  needs network. A missing toolchain is a FAILURE, not a skip.
-- OpenSCAD and Mesa come from nix via scripts/render_scad.sh (EGL
-  surfaceless, works headless). First render fetches them.
+- Nix is optional. Steps 1 and 3 need esphome, yamllint and the
+  esphome_skills package: from PATH (pip install -r requirements.txt)
+  or, as fallback, `nix develop` automatically (first run downloads the
+  toolchain, needs network). A missing toolchain is a FAILURE, not a
+  skip.
+- OpenSCAD resolves as $OPENSCAD, then a 2024+ openscad on PATH, then
+  nix (openscad-unstable + Mesa, EGL surfaceless, works headless; first
+  render fetches them). Byte drift (step 8) only compares when the
+  resolved version equals outputs/openscad_version.txt; otherwise it
+  self-skips with a notice while steps 4-7 still run at full strength.
 - `nix develop` requires the repo files to be tracked by git (nix flakes
   ignore untracked files; `git add` new files first).
 

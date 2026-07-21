@@ -1,0 +1,58 @@
+# The full design gate: regen with warnings as errors, STL checks,
+# layout, budget, drift-or-notice. Only CAD-side changes can move it,
+# so it triggers on those paths alone; the validate workflow covers
+# everything else.
+#
+# No nix: pip plus the latest OpenSCAD snapshot AppImage. Byte drift
+# (verify step 8) self-skips when the AppImage differs from the version
+# recorded in outputs/openscad_version.txt; every other step runs at
+# full strength. The nix flake remains the pinned local path.
+name: design
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cad/**"
+      - "scripts/**"
+      - "tools/**"
+      - "outputs/**"
+      - "requirements.txt"
+      - ".github/workflows/design.yml"
+  pull_request:
+    paths:
+      - "cad/**"
+      - "scripts/**"
+      - "tools/**"
+      - "outputs/**"
+      - "requirements.txt"
+      - ".github/workflows/design.yml"
+
+jobs:
+  design:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install gate toolchain
+        run: pip install -r requirements.txt
+      - name: install OpenSCAD nightly
+        # AppImage from the official snapshot server, extracted so no
+        # FUSE is needed (there is no nightly PPA)
+        run: |
+          latest=$(curl -s https://files.openscad.org/snapshots/ \
+            | grep -oE 'OpenSCAD-[0-9.]+-x86_64\.AppImage' | sort -u | tail -1)
+          echo "using $latest"
+          curl -sLO "https://files.openscad.org/snapshots/$latest"
+          chmod +x "$latest"
+          "./$latest" --appimage-extract > /dev/null
+          echo "OPENSCAD=$PWD/squashfs-root/AppRun" >> "$GITHUB_ENV"
+          # the AppImage expects the system GL runtime, which the bare
+          # runner image does not ship
+          sudo apt-get update && sudo apt-get install -y xvfb \
+            libegl1 libegl-mesa0 libgl1 libglx-mesa0 libgbm1 libopengl0
+          "$PWD/squashfs-root/AppRun" --version
+      - name: design gate
+        run: xvfb-run -a scripts/verify_design.sh
