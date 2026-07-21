@@ -15,12 +15,19 @@
 #   6. layout clearances (scripts/check_layout.py)
 #   7. budget assertions (tools/energy_budget.py --check, no [!] flags)
 #   8. drift: the temp regeneration must byte-match committed outputs/
-#      (if it does not, run scripts/regen_all.py and commit the result)
+#      (if it does not, run scripts/regen_all.py and commit the result).
+#      Bytes are only comparable between identical OpenSCAD builds, so
+#      this step self-skips with a notice when the resolved version
+#      differs from outputs/openscad_version.txt; steps 4-7 still fully
+#      exercise the local toolchain.
 #
-# Steps 1-3 need the devshell toolchain (esphome, yamllint); they run
-# directly if the tools are on PATH, else through `nix develop`. Missing
-# toolchain is a FAILURE, not a skip. FIKA_* env overrides flow through
-# to every step, so the gate can be probed without editing files:
+# Nix is optional: steps 1-3 need esphome, yamllint and the
+# esphome_skills package, from either the devshell (nix develop) or a
+# plain pip install -r requirements.txt.
+# They run directly if the tools are on PATH, else through `nix
+# develop`. Missing toolchain is a FAILURE, not a skip. FIKA_* env
+# overrides flow through to every step, so the gate can be probed
+# without editing files:
 #     FIKA_BOILER_OD=300 scripts/verify_design.sh   # must fail step 6
 #
 # Never fix a failing step by loosening its threshold.
@@ -44,14 +51,15 @@ run_sw() {
     elif command -v nix >/dev/null 2>&1; then
         nix develop "$ROOT" --command python3 "$@"
     else
-        echo "   [FAIL] no devshell toolchain and no nix - cannot run $1"
+        echo "   [FAIL] esphome/yamllint not on PATH and no nix - cannot run $1"
+        echo "          pip install -r requirements.txt, or install nix"
         return 1
     fi
 }
 
 step "[1/8] Python byte-compile"
-if "${PYRUN[@]}" "$PY" tools/validate.py python > "$TMP/py.txt" 2>&1; then
-    good "scripts/ tools/ sim/ byte-compile"
+if run_sw tools/validate.py python > "$TMP/py.txt" 2>&1; then
+    good "scripts/ tools/ byte-compile"
 else
     bad "byte-compile failed:"; tail -10 "$TMP/py.txt"
 fi
@@ -100,8 +108,18 @@ else
 fi
 
 step "[8/8] Derived artifact drift (temp regen vs committed outputs/)"
+CUR_VER=$(scripts/render_scad.sh --version-string 2>/dev/null || true)
+REC_VER=$(cat outputs/openscad_version.txt 2>/dev/null || true)
 if [ -n "$(env | grep '^FIKA_' || true)" ]; then
     echo "   [skip] FIKA_* overrides active - drift vs committed outputs is expected"
+elif [ -n "$CUR_VER" ] && [ -n "$REC_VER" ] && [ "$CUR_VER" != "$REC_VER" ]; then
+    # a different OpenSCAD build renders different bytes by design; the
+    # byte contract holds between matching toolchains only. Every other
+    # step above already ran against this toolchain's output.
+    echo "   [skip] byte drift needs the toolchain that made outputs/:"
+    echo "          committed: $REC_VER"
+    echo "          resolved:  $CUR_VER"
+    echo "          (match them, or regenerate and commit with yours)"
 else
     DRIFT=$("${PYRUN[@]}" "$PY" - "$TMP/outputs" <<'EOF'
 import filecmp, sys

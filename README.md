@@ -40,8 +40,8 @@ reviewed for safety. Do not build from these files.
   copper, never printed; the parts you touch are oak.
 - Deterministic. One parameters file drives CAD, layout checks and
   budgets; one command regenerates every derived artifact; one
-  read-only gate verifies everything and runs before every push (CI
-  wiring of the same gate is on TODO).
+  read-only gate verifies everything, runs before every push, and is
+  exactly what CI runs.
 
 ## Design snapshot
 
@@ -69,6 +69,21 @@ firmware boots under Espressif QEMU and you poke sensor values from a
 debug web page while watching the machine react. See docs/SIMULATION.md
 and `.claude/skills/simulator`.
 
+## Toolchain
+
+Nix is optional everywhere. The software gate needs python3 plus
+esphome, yamllint and the esphome_skills package: either
+`pip install -r requirements.txt` or the pinned devshell
+(`nix develop`). The CAD pipeline needs a 2024+
+OpenSCAD dev snapshot, resolved as `$OPENSCAD`, then `openscad` on
+PATH, then nix; the hero render needs any Blender 4.x the same way.
+One caveat is honest by construction: derived artifacts are only
+byte-reproducible between identical OpenSCAD builds, so the drift step
+of the gate compares bytes when your version matches
+outputs/openscad_version.txt and self-skips with a notice when it does
+not, while every other step runs at full strength. CI runs the same
+gate from pip and the OpenSCAD nightly AppImage, no nix involved.
+
 ## Repository structure
 
 - `cad/` - OpenSCAD models; `design_params.scad` is the single source
@@ -80,10 +95,11 @@ and `.claude/skills/simulator`.
   is not byte deterministic, so the gate cannot drift-check it
 - `esphome/` - composable firmware: `fika-base.yaml` + one package per
   capability + example and simulator nodes
-- `sim/` - QEMU simulator container and injection web UI
 - `scripts/`, `tools/` - the pipeline and the gates
 - `docs/` - contracts: PROTOCOL, HARDWARE, EXTENDING, SIMULATION
 - `concepts/` - design rationale
+- `.github/` - CI workflows, path-filtered: validate always, design on
+  CAD-side changes, firmware on esphome changes
 - `SPECS.md`, `MATERIALS.md`, `TODO.md`
 
 ## How to contribute

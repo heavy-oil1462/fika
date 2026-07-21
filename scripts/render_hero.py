@@ -19,6 +19,7 @@ is the committed quality.
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -103,6 +104,13 @@ def split_by_material(threemf: Path, mesh_dir: Path) -> list[Path]:
 
 
 def blender_bin() -> str:
+    # $BLENDER, then blender on PATH, then nix (same resolution idea as
+    # scripts/render_scad.sh; any Blender 4.x works)
+    if os.environ.get("BLENDER"):
+        return os.environ["BLENDER"]
+    on_path = shutil.which("blender")
+    if on_path:
+        return on_path
     store = subprocess.run(
         ["nix-build", "-I", f"nixpkgs={CHANNEL}", "<nixpkgs>", "-A",
          "blender", "--no-out-link"],
